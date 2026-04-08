@@ -1,44 +1,84 @@
-use std::io::{self, Read, Write};
-use std::net::{TcpListener, TcpStream};
-use std::thread;
+pub mod models;
+use std::sync::Arc;
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::{TcpListener, tcp::OwnedReadHalf},
+    sync::Mutex,
+};
 
-fn main() -> Result<(), io::Error> {
-    let socket = TcpListener::bind("127.0.0.1:7878")?;
+use crate::models::{publisher::Publisher, session::SessionStore};
 
-    println!("Server listening on port 7878...");
+const PORT: &str = "7878";
 
-    for stream in socket.incoming() {
-        match stream {
-            Ok(stream) => {
-                println!("New connection from: {}", stream.peer_addr()?);
-                thread::spawn(move || handle_client(stream));
-            }
-            Err(e) => return Err(e),
-        }
-    }
+#[tokio::main]
+async fn main() -> Result<()> {
+    let listener = TcpListener::bind(format!("127.0.0.1:{}", PORT)).await?;
 
-    Ok(())
-}
-
-fn handle_client(mut stream: TcpStream) -> Result<(), io::Error> {
-    let client_name = stream.peer_addr()?.to_string();
-    let mut buf = [0; 512];
+    println!("Server listening on port {}...", PORT);
 
     loop {
-        let bytes_read = stream.read(&mut buf)?;
+        let (tcp_stream, socket_addr) = match listener.accept().await {
+            Ok(result) => result,
+            Err(e) => {
+                eprintln!("Failed to accept connection {}", e);
+                continue;
+            }
+        };
 
-        if bytes_read == 0 {
-            break;
+        println!("New connection from: {}", socket_addr);
+
+        // split stream into read and write halves
+        let (read, mut write) = tcp_stream.into_split();
+        let mut reader: BufReader<OwnedReadHalf> = BufReader::new(read);
+        let mut first_line = String::new();
+
+        let n = match reader.read_line(&mut first_line).await {
+            Ok(n) => n,
+            Err(e) => {
+                eprintln!("Failed to read handshake from {}: {}", socket_addr, e);
+                continue;
+            }
+        };
+
+        if n == 0 {
+            println!("Read 0 bytes, connection closed");
         }
 
-        let msg = String::from_utf8_lossy(&buf[..bytes_read]);
-        println!("Received: {} from client: {}", msg, client_name);
-        let response = format!("> {}", msg);
+        let msg = first_line.trim_end().to_string();
 
-        stream.write_all(response.as_bytes())?;
+        write.write_all(msg.as_bytes()).await?;
     }
+}
 
-    Ok(())
+async fn reader_loop(
+    mut reader: BufReader<OwnedReadHalf>,
+    subscriber_id: i32,
+    conversation_id: i32,
+    publisher: Arc<Mutex<Publisher>>,
+    store: Arc<Mutex<SessionStore>>,
+) {
+    let mut line = String::new();
+    loop {
+        line.clear();
+        match reader.read_line(&mut line).await {
+            Ok(0) => {
+                println!("Read 0 bytes, connection closed");
+                break;
+            }
+            Ok(_bytes) => {
+                let trim_msg = line.trim_end();
+                if trim_msg.is_empty() {
+                    continue;
+                } else {
+                    let mut pub_locked = publisher.lock().await;
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to read line: {}", e);
+                break;
+            }
+        }
+    }
 }
 
 /*
