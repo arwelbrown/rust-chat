@@ -1,15 +1,16 @@
 use crate::models::{message::Message, subscriber::Subscriber};
 use std::collections::HashSet;
+use uuid::Uuid;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct ChatRoom {
-    pub id: i32, // maybe should be a uuid?
+    pub id: Uuid,
     pub subscribers: HashSet<Subscriber>,
     pub messages: Vec<Message>,
 }
 
 impl ChatRoom {
-    pub fn new(id: i32) -> Self {
+    pub fn new(id: Uuid) -> Self {
         ChatRoom {
             id: id,
             subscribers: HashSet::new(),

@@ -1,6 +1,7 @@
 use super::subscriber::Subscriber;
 use std::collections::HashMap;
 use tokio::sync::mpsc::Sender;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Session {
@@ -10,7 +11,7 @@ pub struct Session {
 
 #[derive(Debug)]
 pub struct SessionStore {
-    sessions: HashMap<i32, Session>,
+    sessions: HashMap<Uuid, Session>,
 }
 
 impl SessionStore {
@@ -20,19 +21,19 @@ impl SessionStore {
         }
     }
 
-    pub fn get(&self, id: i32) -> Option<&Session> {
+    pub fn get(&self, id: Uuid) -> Option<&Session> {
         self.sessions.get(&id)
     }
 
-    pub fn insert(&mut self, id: i32, session: Session) {
+    pub fn insert(&mut self, id: Uuid, session: Session) {
         self.sessions.insert(id, session);
     }
 
-    pub fn remove(&mut self, id: &i32) {
+    pub fn remove(&mut self, id: &Uuid) {
         self.sessions.remove(id);
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&i32, &Session)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Uuid, &Session)> {
         self.sessions.iter()
     }
 }

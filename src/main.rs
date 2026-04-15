@@ -3,7 +3,6 @@ pub mod utils;
 use anyhow::Result;
 use std::{
     collections::{HashMap, HashSet},
-    io::Error,
     net::SocketAddr,
     sync::Arc,
 };
@@ -15,6 +14,7 @@ use tokio::{
         mpsc::{self},
     },
 };
+use uuid::Uuid;
 
 use crate::{
     models::{
@@ -135,15 +135,11 @@ async fn main() -> Result<()> {
             write,
         ));
     }
-
-    // technically unreachable, but required for type
-    #[allow(unreachable_code)]
-    Ok(())
 }
 
 async fn acknowledge_handshake(
-    subscriber_id: i32,
-    conversation_id: i32,
+    subscriber_id: Uuid,
+    conversation_id: Uuid,
     publisher: Arc<Mutex<Publisher>>,
     socket_addr: SocketAddr,
     write: &mut OwnedWriteHalf,
@@ -175,11 +171,11 @@ async fn acknowledge_handshake(
 
 async fn reader_loop(
     mut reader: BufReader<OwnedReadHalf>,
-    subscriber_id: i32,
-    conversation_id: i32,
+    subscriber_id: Uuid,
+    conversation_id: Uuid,
     publisher: Arc<Mutex<Publisher>>,
     store: Arc<Mutex<SessionStore>>,
-) -> Result<(), Error> {
+) -> Result<()> {
     let mut line = String::new();
     loop {
         line.clear();
@@ -224,13 +220,25 @@ async fn reader_loop(
 
 async fn writer_loop(
     mut rx: mpsc::Receiver<String>,
-    subscriber_id: i32,
+    subscriber_id: Uuid,
     store: Arc<Mutex<SessionStore>>,
-    _conversation_id: i32,
-    _publisher: Arc<Mutex<Publisher>>,
+    conversation_id: Uuid,
+    publisher: Arc<Mutex<Publisher>>,
     mut write: OwnedWriteHalf,
 ) {
     while let Some(msg) = rx.recv().await {
+        println!("Broadcasting message from {}: {}", subscriber_id, msg);
+        let mut pub_locked = publisher.lock().await;
+        let subscriber = Subscriber { id: subscriber_id };
+        let mut subs: HashSet<Subscriber> = HashSet::new();
+
+        subs.insert(subscriber);
+        pub_locked.sub_to_room(conversation_id, subs.to_owned());
+        pub_locked.list_rooms();
+        pub_locked
+            .dispatch_messages(conversation_id, &Message::new(msg.clone()), store.clone())
+            .await;
+
         let msg_with_newline = if msg.ends_with('\n') {
             msg
         } else {
@@ -260,3 +268,6 @@ async fn writer_loop(
     store.remove(&subscriber_id);
     println!("Session {} removed", subscriber_id);
 }
+
+// TODO:
+// - are there any places where a Mutex can be replaced with an RwLock?

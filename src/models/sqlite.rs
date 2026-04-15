@@ -4,6 +4,7 @@ use crate::{
 };
 
 use rusqlite::{Connection, Result};
+use uuid::Uuid;
 
 pub struct SqLite {
     conn: Connection,
@@ -24,8 +25,8 @@ impl SqLite {
         self.conn.execute(
             "INSERT INTO messages (conversation_id, sender_id, content, timestamp, status) VALUES (?1, ?2, ?3, ?4, ?5)",
             (
-                msg.conversation_id,
-                msg.sender_id,
+                msg.conversation_id.to_string(),
+                msg.sender_id.to_string(),
                 &msg.content,
                 &msg.timestamp,
                 &format!("{:?}", msg.status),
@@ -45,23 +46,23 @@ impl SqLite {
     pub fn save_new_chat_room(&self, chat_room: ChatRoom) -> Result<()> {
         self.conn.execute(
             "INSERT INTO chat_room (chat_room_id) VALUES (?1)",
-            (chat_room.id,),
+            (chat_room.id.to_string(),),
         )?;
         Ok(())
     }
 
-    pub fn delete_chat_room(&self, chat_room: i32) -> Result<()> {
+    pub fn delete_chat_room(&self, chat_room: Uuid) -> Result<()> {
         self.conn.execute(
             "DELETE FROM chat_room WHERE chat_room_id = ?1",
-            (chat_room,),
+            (chat_room.to_string(),),
         )?;
         Ok(())
     }
 
-    pub fn remove_subscriber(&self, chat_room: i32, subscriber_id: i32) -> Result<()> {
+    pub fn remove_subscriber(&self, chat_room_id: Uuid, subscriber_id: Uuid) -> Result<()> {
         self.conn.execute(
             "DELETE FROM chat_room_subscribers WHERE chat_room_id = ?1 AND subscriber_id = ?2",
-            (chat_room, subscriber_id),
+            (chat_room_id.to_string(), subscriber_id.to_string()),
         )?;
         Ok(())
     }

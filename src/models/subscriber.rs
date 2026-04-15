@@ -1,8 +1,9 @@
 use crate::models::message::Message;
+use uuid::Uuid;
 
 #[derive(Hash, Debug, Clone, Eq, PartialEq, Copy)]
 pub struct Subscriber {
-    pub id: i32,
+    pub id: Uuid,
 }
 
 impl Subscriber {

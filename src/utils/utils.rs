@@ -2,6 +2,7 @@ use crate::models::publisher::Publisher;
 use rusqlite::{Connection, Result};
 use std::{fs, path::Path, str, sync::Arc};
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 pub struct Utils {
     i: String,
@@ -22,7 +23,7 @@ impl Utils {
     pub fn formatter(
         msg: &str,
         _publisher: Arc<Mutex<Publisher>>,
-    ) -> Result<(i32, i32, String), anyhow::Error> {
+    ) -> Result<(Uuid, Uuid, String), anyhow::Error> {
         let msg = msg.trim_end();
         let parts: Vec<&str> = msg.split('|').collect();
 

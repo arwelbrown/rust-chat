@@ -5,10 +5,11 @@ use crate::models::{
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 // Publisher is responsible for managing chat rooms and conversations.
 pub struct Publisher {
-    pub conversations: HashMap<i32, ChatRoom>, // registry of subscribers/listeners
+    pub conversations: HashMap<Uuid, ChatRoom>, // registry of subscribers/listeners
     pub db: SqLite,
 }
 
@@ -20,7 +21,7 @@ impl Publisher {
         // TODO: persist room to db
     }
 
-    pub fn sub_to_room(&mut self, conversation_id: i32, subscribers: HashSet<Subscriber>) {
+    pub fn sub_to_room(&mut self, conversation_id: Uuid, subscribers: HashSet<Subscriber>) {
         if let Some(existing_conversation) = self.conversations.get_mut(&conversation_id) {
             for s in &subscribers {
                 existing_conversation.subscribers.insert(s.to_owned());
@@ -36,7 +37,7 @@ impl Publisher {
         }
     }
 
-    pub fn unsub_from_room(&mut self, conversation_id: i32, subscribers: HashSet<Subscriber>) {
+    pub fn unsub_from_room(&mut self, conversation_id: Uuid, subscribers: HashSet<Subscriber>) {
         if let Some(existing_members) = self.conversations.get_mut(&conversation_id) {
             for s in &subscribers {
                 existing_members.subscribers.remove(s);
@@ -48,7 +49,7 @@ impl Publisher {
 
     pub async fn dispatch_messages(
         &mut self,
-        conversation_id: i32,
+        conversation_id: Uuid,
         message: &Message,
         store: Arc<Mutex<SessionStore>>,
     ) {
@@ -66,7 +67,7 @@ impl Publisher {
         }
     }
 
-    pub fn delete_room(&mut self, conversation_id: i32) {
+    pub fn delete_room(&mut self, conversation_id: Uuid) {
         self.conversations.remove(&conversation_id);
 
         println!("Chat room {} deleted", conversation_id);
