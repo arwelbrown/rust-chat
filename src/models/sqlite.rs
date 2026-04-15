@@ -1,4 +1,7 @@
-use crate::models::{conversations::ChatRoom, message::Message};
+use crate::{
+    models::{conversations::ChatRoom, message::Message},
+    utils::utils::Utils,
+};
 
 use rusqlite::{Connection, Result};
 
@@ -10,7 +13,10 @@ pub struct SqLite {
 impl SqLite {
     pub fn init(db_name: String) -> Result<Self> {
         let conn = Connection::open(&db_name)?;
-        println!("Connected to {}", db_name);
+        println!("Connected to {}", &db_name);
+
+        Utils::run_migrations(&conn)?;
+
         Ok(Self { conn, db_name })
     }
 
@@ -24,6 +30,38 @@ impl SqLite {
                 &msg.timestamp,
                 &format!("{:?}", msg.status),
             ),
+        )?;
+        Ok(())
+    }
+
+    pub fn add_subscriber(&self, conversation_id: i32, subscriber_id: i32) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO chat_room_subscribers (conversation_id, subscriber_id) VALUES (?1, ?2)",
+            (conversation_id, subscriber_id),
+        )?;
+        Ok(())
+    }
+
+    pub fn save_new_chat_room(&self, chat_room: ChatRoom) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO chat_room (chat_room_id) VALUES (?1)",
+            (chat_room.id,),
+        )?;
+        Ok(())
+    }
+
+    pub fn delete_chat_room(&self, chat_room: i32) -> Result<()> {
+        self.conn.execute(
+            "DELETE FROM chat_room WHERE chat_room_id = ?1",
+            (chat_room,),
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_subscriber(&self, chat_room: i32, subscriber_id: i32) -> Result<()> {
+        self.conn.execute(
+            "DELETE FROM chat_room_subscribers WHERE chat_room_id = ?1 AND subscriber_id = ?2",
+            (chat_room, subscriber_id),
         )?;
         Ok(())
     }
