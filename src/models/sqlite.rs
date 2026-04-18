@@ -8,7 +8,6 @@ use uuid::Uuid;
 
 pub struct SqLite {
     conn: Connection,
-    db_name: String,
 }
 
 impl SqLite {
@@ -18,7 +17,7 @@ impl SqLite {
 
         Utils::run_migrations(&conn)?;
 
-        Ok(Self { conn, db_name })
+        Ok(Self { conn })
     }
 
     pub fn add_message(&self, msg: Message) -> Result<()> {

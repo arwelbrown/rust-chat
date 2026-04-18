@@ -4,9 +4,7 @@ use std::{fs, path::Path, str, sync::Arc};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-pub struct Utils {
-    i: String,
-}
+pub struct Utils {}
 
 impl Utils {
     pub fn run_migrations(conn: &Connection) -> Result<()> {

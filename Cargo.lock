@@ -332,6 +332,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-chat"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "rusqlite",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -444,16 +454,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "tcp-rust"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "rusqlite",
- "tokio",
- "uuid",
 ]
 
 [[package]]
